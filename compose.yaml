@@ -3,40 +3,56 @@ volumes:
   data2:
   data3:
 
+networks:
+  blockchain_network:
+    driver: bridge
+
 services:
   backend1:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: python-blockchain-backend
+    image: python-blockchain-backend-1
     environment:
       FLASK_RUN_PORT: 8000
       DATA_FILE: /data/chain.json
-    network_mode: "host"
+    ports:
+      - "8000:8000"
     volumes:
       - "data1:/data"
+    networks:
+      - blockchain_network
+
   backend2:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: python-blockchain-backend
+    image: python-blockchain-backend-2
     environment:
       FLASK_RUN_PORT: 8001
       DATA_FILE: /data/chain.json
-    network_mode: "host"
+    ports:
+      - "8001:8001"
     volumes:
       - "data2:/data"
+    networks:
+      - blockchain_network
+
   backend3:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: python-blockchain-backend
+    image: python-blockchain-backend-3
     environment:
       FLASK_RUN_PORT: 8002
       DATA_FILE: /data/chain.json
-    network_mode: "host"
+    ports:
+      - "8002:8002"
     volumes:
       - "data3:/data"
+    networks:
+      - blockchain_network
+
   frontend:
     build:
       context: .
@@ -44,4 +60,12 @@ services:
     image: python-blockchain-frontend
     environment:
       FLASK_RUN_PORT: 5000
-    network_mode: "host"
+      CONNECTED_NODE_ADDRESS: "http://backend1:8000"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    networks:
+      - blockchain_network

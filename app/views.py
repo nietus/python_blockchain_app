@@ -1,14 +1,17 @@
 import datetime
 import json
+import os
 
 import requests
 from flask import render_template, redirect, request
 
 from app import app
 
-# The node with which our application interacts, there can be multiple
-# such nodes as well.
-CONNECTED_NODE_ADDRESS = "http://127.0.0.1:8000"
+# Internal address for server-side requests
+CONNECTED_NODE_ADDRESS = "http://backend1:8000"
+
+# External address for browser-side requests
+EXTERNAL_NODE_ADDRESS = "http://localhost:8000"
 
 posts = []
 
@@ -41,7 +44,7 @@ def index():
                            title='YourNet: Decentralized '
                                  'content sharing',
                            posts=posts,
-                           node_address=CONNECTED_NODE_ADDRESS,
+                           node_address=EXTERNAL_NODE_ADDRESS,
                            readable_time=timestamp_to_string)
 
 
@@ -65,6 +68,16 @@ def submit_textarea():
                   json=post_object,
                   headers={'Content-type': 'application/json'})
 
+    return redirect('/')
+
+
+@app.route('/mine_redirect')
+def mine_redirect():
+    """
+    Internal endpoint to handle mining request
+    """
+    # Use internal address for the actual mining request
+    response = requests.get(f"{CONNECTED_NODE_ADDRESS}/mine")
     return redirect('/')
 
 

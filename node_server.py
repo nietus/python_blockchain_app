@@ -200,7 +200,9 @@ def get_chain():
 
 
 def save_chain():
-    if chain_file_name is not None:
+    """Save the blockchain to file"""
+    if chain_file_name is not None and blockchain is not None:
+        ensure_data_directory()
         with open(chain_file_name, 'w') as chain_file:
             chain_file.write(get_chain())
 
@@ -209,27 +211,35 @@ def exit_from_signal(signum, stack_frame):
     sys.exit(0)
 
 
+def ensure_data_directory():
+    """Ensure the data directory exists"""
+    if chain_file_name is not None:
+        data_dir = os.path.dirname(chain_file_name)
+        os.makedirs(data_dir, exist_ok=True)
+
+
+# Initialize blockchain first
+blockchain = Blockchain()
+peers = set()
+
+# Then handle chain file loading
+if chain_file_name is not None:
+    ensure_data_directory()
+    try:
+        with open(chain_file_name, 'r') as chain_file:
+            raw_data = chain_file.read()
+            if raw_data and len(raw_data) > 0:
+                data = json.loads(raw_data)
+                blockchain = create_chain_from_dump(data['chain'])
+                peers.update(data['peers'])
+    except (FileNotFoundError, json.JSONDecodeError):
+        # If file doesn't exist or is invalid, we already have a new blockchain initialized
+        pass
+
+# Now register the exit handler
 atexit.register(save_chain)
 signal.signal(signal.SIGTERM, exit_from_signal)
 signal.signal(signal.SIGINT, exit_from_signal)
-
-
-if chain_file_name is None:
-    data = None
-else:
-    with open(chain_file_name, 'r') as chain_file:
-        raw_data = chain_file.read()
-        if raw_data is None or len(raw_data) == 0:
-            data = None
-        else:
-            data = json.loads(raw_data)
-
-if data is None:
-    # the node's copy of blockchain
-    blockchain = Blockchain()
-else:
-    blockchain = create_chain_from_dump(data['chain'])
-    peers.update(data['peers'])
 
 
 # endpoint to request the node to mine the unconfirmed
